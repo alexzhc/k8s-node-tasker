@@ -1,4 +1,4 @@
-# K8S Node Task
+# K8S Node Tasker
 A daemonset that peforms a new task on each node whenever its configmap updates
 
 ## Why this project:
