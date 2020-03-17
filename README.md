@@ -1,2 +1,2 @@
 # k8s-nodetask
-A daemonset that peforms a new task on each node when its configmap updates
+A daemonset that peforms a new task on each node whenever its configmap updates
