@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-tasker
+  namespace: default
+spec:
+  minReadySeconds: 0
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: node-tasker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: node-tasker
+    spec:
+      restartPolicy: Always
+      hostNetwork: true
+      hostPID: true
+      dnsPolicy: ClusterFirstWithHostNet
+      initContainers:
+      - name: task
+        image: node-tasker
+        imagePullPolicy: Always
+        securityContext:
+          privileged: true
+        resources:
+          limits:
+            cpu: 200m
+            memory: 200Mi
+        envFrom:
+        - configMapRef:
+            name: node-tasker
+        env:
+        - name: THIS_POD_UID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.uid         
+        - name: THIS_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: THIS_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        args:
+          - runtask
+        volumeMounts:
+        - name: localtime
+          mountPath: /etc/localtime
+      containers:
+      - name: checkconfig
+        image: node-tasker
+        imagePullPolicy: Always
+        securityContext:
+          privileged: true
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100Mi
+        envFrom:
+        - configMapRef:
+            name: node-tasker
+        env:
+        - name: THIS_POD_UID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.uid         
+        - name: THIS_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: THIS_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        args:
+          - checkconfig
+        readinessProbe:
+          successThreshold: 3
+          failureThreshold: 3
+          httpGet:
+            port: 
+          periodSeconds: 1
+        volumeMounts:
+        - name: localtime
+          mountPath: /etc/localtime
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node/tasker
+                operator: Exits
+              - key: node-role.kubernetes.io/master
+                operator: DoesNotExist
