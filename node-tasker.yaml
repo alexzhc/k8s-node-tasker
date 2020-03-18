@@ -2,13 +2,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: node-tasker
-  namespace: default
 spec:
-  minReadySeconds: 0
-  updateStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: node-tasker
@@ -17,88 +11,153 @@ spec:
       labels:
         app.kubernetes.io/name: node-tasker
     spec:
+      serviceAccount: node-tasker
       restartPolicy: Always
-      hostNetwork: true
-      hostPID: true
-      dnsPolicy: ClusterFirstWithHostNet
-      initContainers:
-      - name: task
-        image: node-tasker
-        imagePullPolicy: Always
-        securityContext:
-          privileged: true
-        resources:
-          limits:
-            cpu: 200m
-            memory: 200Mi
-        envFrom:
-        - configMapRef:
-            name: node-tasker
-        env:
-        - name: THIS_POD_UID
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.uid         
-        - name: THIS_POD_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        - name: THIS_NODE_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: spec.nodeName
-        args:
-          - runtask
-        volumeMounts:
-        - name: localtime
-          mountPath: /etc/localtime
+      dnsPolicy: ClusterFirst
       containers:
-      - name: checkconfig
-        image: node-tasker
-        imagePullPolicy: Always
+      - name: tasker
+        image: dockerhub.azk8s.cn/alexzhc/node-tasker
+        imagePullPolicy: IfNotPresent
         securityContext:
           privileged: true
         resources:
           limits:
             cpu: 100m
             memory: 100Mi
-        envFrom:
-        - configMapRef:
-            name: node-tasker
         env:
-        - name: THIS_POD_UID
+        - name: THIS_POD_NAME
           valueFrom:
             fieldRef:
-              fieldPath: metadata.uid         
-        - name: THIS_POD_IP
+              fieldPath: metadata.name
+        - name: THIS_POD_NAMESPACE
           valueFrom:
             fieldRef:
-              fieldPath: status.podIP
+              fieldPath: metadata.namespace
         - name: THIS_NODE_NAME
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
+        command:
+        - sh
         args:
-          - checkconfig
-        readinessProbe:
-          successThreshold: 3
-          failureThreshold: 3
-          httpGet:
-            port: 
-          periodSeconds: 1
+        - -xc
+        - |
+          _cleanup_completed_job(){
+            for i in "$( kubectl -n "$THIS_POD_NAMESPACE" get pod -l app.kubernetes.io/name=node-tasker --field-selector=status.phase=Succeeded -o name )"; do
+              kubectl delete job "$( echo $i | sed -r 's/pod\/(.*)-[a-z0-9]+$/\1/' )"
+            done
+          }
+
+          _cleanup_completed_job
+
+          cat /var/local/run/yaml \
+            | sed "s/namespace: default/namespace: ${THIS_POD_NAMESPACE}/" \
+            | sed "s/localhost/${THIS_NODE_NAME}/" \
+            | sed "s/node-tasker-job/${THIS_POD_NAME}/" \
+            | kubectl apply -f - 
+
+          previous_checksum="$( sha256sum /var/local/run/task )"
+          trap "exit 0" SIGTERM SIGINT
+          
+          while true; do
+            current_checksum="$( sha256sum /var/local/run/task )"
+            _cleanup_completed_job
+            [ "$current_checksum" != "$previous_checksum" ] && echo "* New task arrived!" && exit 0
+            sleep 1
+          done
         volumeMounts:
-        - name: localtime
-          mountPath: /etc/localtime
+        - name: run
+          mountPath: /var/local/run        
       volumes:
-      - name: localtime
-        hostPath:
-          path: /etc/localtime
+      - name: run
+        configMap:
+          name: node-tasker
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-              - key: node/tasker
-                operator: Exits
-              - key: node-role.kubernetes.io/master
-                operator: DoesNotExist
+              - key: node/task
+                operator: Exists
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: node-tasker
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: node-tasker
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: node-tasker
+subjects:
+  - kind: ServiceAccount
+    name: node-tasker
+roleRef:
+  kind: Role
+  name: node-tasker
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: node-tasker
+data:
+  yaml: |
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: node-tasker-job
+      namespace: default
+      labels:
+        app.kubernetes.io/name: node-tasker
+    spec:
+      backoffLimit: 1
+      template: 
+        metadata:
+          name: node-tasker-job
+          labels:
+            app.kubernetes.io/name: node-tasker
+        spec:
+          restartPolicy: OnFailure
+          activeDeadlineSeconds: 600
+          containers:
+          - name: job
+            image: dockerhub.azk8s.cn/library/busybox
+            command:
+            - /var/local/run/task
+            resources:
+              limits:
+                cpu: 100m
+                memory: 100Mi
+            volumeMounts:
+            - name: run
+              mountPath: /var/local/run
+          volumes:
+          - name: run
+            configMap:
+              name: node-tasker
+              items:
+              - key: task
+                path: task
+                mode: 0755
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                    - localhost
+  task: |
+        #!/bin/sh
+        echo "hello world"
