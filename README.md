@@ -6,7 +6,7 @@ A daemonset that peforms a new task on each node when its configmap updates
 ## How does it work
 1. node-tasker pod checks every 2 seconds if configmap is updated
 1. once node-tasker detects configmap has changed, it then runs a job locally to execute the commands in that configmap
-1. node-tasker delete the job once it is complete
+1. node-tasker deletes the job once it is complete
 
 ## Guide
 Create Rbac credentials
