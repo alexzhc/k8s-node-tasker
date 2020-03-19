@@ -2,7 +2,7 @@
 ## Overview
 A daemonset that peforms a new task on each node when its configmap updates
 
-## Why this project
+## Why do this project
 Kubernetes has not implemented any mechanism for running job on each node. 
 
 ## How does it work
@@ -11,7 +11,7 @@ Kubernetes has not implemented any mechanism for running job on each node.
 1. node-tasker deletes the job once it is complete
 
 ## Guide
-Create Rbac credentials
+Create rbac credentials
 ```
 $ kubectl apply -f rbac.yaml
 ```
