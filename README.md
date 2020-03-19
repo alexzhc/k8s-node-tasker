@@ -1,7 +1,9 @@
 # K8S Node Tasker
+## Overview
 A daemonset that peforms a new task on each node when its configmap updates
 
-## Overview
+## Why this project
+Kubernetes has not implemented any mechanism for running job on each node. 
 
 ## How does it work
 1. node-tasker pod checks every 2 seconds if configmap is updated
