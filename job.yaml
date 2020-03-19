@@ -1,36 +1,38 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: node-task
+  name: node-tasker-job
+  namespace: default
   labels:
-    app.kubernetes.io/name: node-task
+    app.kubernetes.io/name: node-tasker
 spec:
-  backoffLimit: 4
+  backoffLimit: 1
   template: 
     metadata:
-      name: node-task
+      name: node-tasker-job
       labels:
-        app.kubernetes.io/name: node-task
+        app.kubernetes.io/name: node-tasker
     spec:
-      restartPolicy: Never
+      restartPolicy: OnFailure
+      activeDeadlineSeconds: 600
       containers:
       - name: job
         image: dockerhub.azk8s.cn/library/busybox
+        imagePullPolicy: IfNotPresent
         command:
-        - ls
-        - -l 
-        - /var/local/run/task
+        - /run/task
         resources:
           limits:
             cpu: 100m
             memory: 100Mi
         volumeMounts:
         - name: run
-          mountPath: /var/local/run
+          mountPath: /run/task
+          subPath: task
       volumes:
       - name: run
         configMap:
-          name: node-task
+          name: node-tasker
           items:
           - key: task
             path: task
@@ -43,4 +45,4 @@ spec:
               - key: kubernetes.io/hostname
                 operator: In
                 values:
-                - k8s-worker-1
+                - localhost
