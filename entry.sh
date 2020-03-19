@@ -18,6 +18,7 @@ if [ -s /var/local/run/task ]; then
     | sed "s/namespace: default/namespace: ${THIS_POD_NAMESPACE}/" \
     | sed "s/- localhost/- ${THIS_NODE_NAME}/" \
     | sed "s/name: node-tasker-job/name: ${THIS_POD_NAME}/" \
+    | sed "s#image: busybox#image: ${JOB_IMG}#" \
     | kubectl apply -f - 
 fi
 

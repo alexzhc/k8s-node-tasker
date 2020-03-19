@@ -23,13 +23,15 @@ spec:
       dnsPolicy: ClusterFirst
       containers:
       - name: tasker
-        image: dockerhub.azk8s.cn/alexzhc/node-tasker
-        imagePullPolicy: Always
+        image: daocloud.io/piraeus/node-tasker
+        imagePullPolicy: IfNotPresent
         resources:
           limits:
             cpu: 100m
             memory: 100Mi
         env:
+        - name: JOB_IMG
+          value: daocloud.io/busybox
         - name: THIS_POD_NAME
           valueFrom:
             fieldRef:

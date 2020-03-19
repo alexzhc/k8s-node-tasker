@@ -17,7 +17,7 @@ spec:
       activeDeadlineSeconds: 600
       containers:
       - name: job
-        image: dockerhub.azk8s.cn/library/python
+        image: busybox
         imagePullPolicy: IfNotPresent
         command:
         - /run/task
