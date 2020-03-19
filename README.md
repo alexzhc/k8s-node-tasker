@@ -49,13 +49,14 @@ node-tasker-dvhqr         1/1     Running             1          20m   172.28.23
 node-tasker-dvhqr-cljdj   0/1     ContainerCreating   0          1s    <none>          k8s-worker-1
 ```
 
-4. node-tasker deletes the job after it completes
+4. job completes
 ```
 NAME                      READY   STATUS              RESTARTS   AGE   IP              NODE
 node-tasker-dvhqr         1/1     Running             1         20m   172.28.230.13   k8s-worker-1
 node-tasker-dvhqr-cljdj   0/1     Completed           0          3s    172.28.230.22   k8s-worker-1
 ```
 
+5. node-tasker cleans up completed jobs
 ```
 NAME                      READY   STATUS              RESTARTS   AGE   IP              NODE
 node-tasker-dvhqr         1/1     Running             1         20m   172.28.230.13   k8s-worker-1
