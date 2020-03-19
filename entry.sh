@@ -24,7 +24,7 @@ fi
 # Check if configmap gets updated, restart if updated
 trap 'exit 0' SIGTERM SIGINT
 previous_checksum="$( sha256sum /var/local/run/task )"
-while sleep 1; do
+while sleep 2; do
     current_checksum="$( sha256sum /var/local/run/task )"
     _cleanup_completed_job
     [ "$current_checksum" != "$previous_checksum" ] && echo "* New task arrived!" && exit 0
