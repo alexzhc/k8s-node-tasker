@@ -5,11 +5,12 @@
 
 # Clean up completed jobs
 _cleanup_completed_job(){
-for i in "$( kubectl -n "$THIS_POD_NAMESPACE" get pod -l app.kubernetes.io/name=node-tasker --field-selector=status.phase=Succeeded -o name )"; do
-    [ -z "$i" ] && continue
-    kubectl delete job "$( echo $i | sed -r 's/pod\/(.*)-[a-z0-9]+$/\1/' )"
-done
+[ -n "$( kubectl -n "$THIS_POD_NAMESPACE" \
+    get pod -l app.kubernetes.io/component="$THIS_POD_NAME" \
+    --field-selector=status.phase=Succeeded )" ] &&
+    kubectl delete job "$THIS_POD_NAME"
 }
+
 _cleanup_completed_job
 
 # Create a new job if /var/local/run/task exists
@@ -17,7 +18,7 @@ if [ -s /var/local/run/task ]; then
     cat /job.yaml \
     | sed "s/namespace: default/namespace: ${THIS_POD_NAMESPACE}/" \
     | sed "s/- localhost/- ${THIS_NODE_NAME}/" \
-    | sed "s/name: node-tasker-job/name: ${THIS_POD_NAME}/" \
+    | sed "s/ node-tasker-job/ ${THIS_POD_NAME}/" \
     | sed "s#image: busybox#image: ${JOB_IMG}#" \
     | kubectl apply -f - 
 fi

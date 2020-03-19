@@ -5,6 +5,7 @@ metadata:
   namespace: default
   labels:
     app.kubernetes.io/name: node-tasker
+    app.kubernetes.io/component: node-tasker-job
 spec:
   backoffLimit: 1
   template: 
@@ -12,6 +13,7 @@ spec:
       name: node-tasker-job
       labels:
         app.kubernetes.io/name: node-tasker
+        app.kubernetes.io/component: node-tasker-job
     spec:
       restartPolicy: OnFailure
       activeDeadlineSeconds: 600

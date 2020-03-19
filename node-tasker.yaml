@@ -20,18 +20,19 @@ spec:
     spec:
       serviceAccount: node-tasker
       restartPolicy: Always
+      terminationGracePeriodSeconds: 5
       dnsPolicy: ClusterFirst
       containers:
       - name: tasker
-        image: daocloud.io/piraeus/node-tasker
-        imagePullPolicy: IfNotPresent
+        image: daocloud.io/piraeus/node-tasker:v0.1
+        imagePullPolicy: Always
         resources:
           limits:
             cpu: 100m
             memory: 100Mi
         env:
         - name: JOB_IMG
-          value: daocloud.io/busybox
+          value: daocloud.io/piraeus/node-tasker:v0.1
         - name: THIS_POD_NAME
           valueFrom:
             fieldRef:

@@ -21,8 +21,8 @@ $ kubectl apply -f node-tasker.yaml
 ```
 Update configmap with
 ```
-$ kubectl delete cm node-tasker && \
-  kubectl create cm node-tasker --from-file=task=hello.sh
+$ kubectl create cm node-tasker --from-file=task=hello.sh --dry-run -o yaml \
+    | kubectl replace -f -
 ```
 > It might take serveral minutes Kubernetes propagate configmap updates into the pods. 
 
