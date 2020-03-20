@@ -24,7 +24,7 @@ Update configmap with
 $ kubectl create cm node-tasker --from-file=task=hello.sh --dry-run -o yaml \
     | kubectl replace -f -
 ```
-> It might take serveral minutes for pods to receive configmap updates.
+> It might take up to a minute for pods to receive configmap updates.
 
 ## Sequence of executions
 

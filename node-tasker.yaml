@@ -24,7 +24,7 @@ spec:
       dnsPolicy: ClusterFirst
       containers:
       - name: tasker
-        image: daocloud.io/piraeus/node-tasker:v0.1
+        image: alexzhc/node-tasker:v0.1
         imagePullPolicy: IfNotPresent
         resources:
           limits:
@@ -32,7 +32,7 @@ spec:
             memory: 100Mi
         env:
         - name: JOB_IMG
-          value: daocloud.io/piraeus/node-tasker:v0.1
+          value: busybox
         - name: THIS_POD_NAME
           valueFrom:
             fieldRef:
